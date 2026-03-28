@@ -1,7 +1,7 @@
 const STORAGE_KEY = "sport-court-appointments-v1";
 const CHAT_KEY = "sport-court-chat-v1";
 const USER_KEY = "sport-court-user-v1";
-const DEMO_SEED_FLAG = "sport-court-demo-seed-v2";
+const DEMO_SEED_FLAG = "sport-court-demo-seed-v3";
 
 const HR_LOCALE = "hr-HR";
 
@@ -187,6 +187,26 @@ export function joinAppointment(appointmentId, userId, displayName) {
   return { ok: true };
 }
 
+export function leaveAppointment(appointmentId, userId) {
+  if (!userId) {
+    return { ok: false, error: "Nema korisničkog profila." };
+  }
+  const list = loadAll();
+  const idx = list.findIndex((a) => a.id === appointmentId);
+  if (idx === -1) {
+    return { ok: false, error: "Termin nije pronađen." };
+  }
+  const a = list[idx];
+  const before = Array.isArray(a.participants) ? a.participants : [];
+  const participants = before.filter((p) => p.userId !== userId);
+  if (participants.length === before.length) {
+    return { ok: false, error: "Nisi prijavljen na ovaj termin." };
+  }
+  list[idx] = { ...a, participants };
+  saveAll(list);
+  return { ok: true };
+}
+
 function loadChatMap() {
   try {
     const raw = localStorage.getItem(CHAT_KEY);
@@ -210,6 +230,24 @@ export function getChatMessages(appointmentId) {
   return Array.isArray(list) ? list : [];
 }
 
+/** Nadolazeći termini (počinju u budućnosti, unutar sljedećih maxHoursAhead h), sortirano po vremenu. */
+export function getUpcomingAppointmentsSoon(now = new Date(), limit = 6, maxHoursAhead = 72) {
+  const horizon = new Date(now.getTime() + maxHoursAhead * 60 * 60 * 1000);
+  return loadAll()
+    .filter((a) => {
+      const start = new Date(a.startIso);
+      const endA = endDate(a);
+      return (
+        !Number.isNaN(start.getTime()) &&
+        endA > now &&
+        start >= now &&
+        start <= horizon
+      );
+    })
+    .sort((a, b) => new Date(a.startIso) - new Date(b.startIso))
+    .slice(0, limit);
+}
+
 export function addChatMessage(appointmentId, author, text) {
   const body = String(text ?? "").trim();
   const who = String(author ?? "").trim();
@@ -231,62 +269,129 @@ export function addChatMessage(appointmentId, author, text) {
   return msg;
 }
 
+function mix32(x) {
+  let v = x | 0;
+  v ^= v >>> 16;
+  v = Math.imul(v, 0x7feb352d);
+  v ^= v >>> 15;
+  v = Math.imul(v, 0x846ca68b);
+  v ^= v >>> 16;
+  return v >>> 0;
+}
+
+/** Deterministički [0, 1) za seed + salt (nasumičnost između lokacija/slotova). */
+function unit(seed, salt) {
+  return mix32(seed + salt * 0x9e3779b9) / 0x1_0000_0000;
+}
+
+const DEMO_NAME_POOL = [
+  "Ana H.",
+  "Marko K.",
+  "Petra N.",
+  "Ivan B.",
+  "Lucija M.",
+  "Tomislav V.",
+  "Maja R.",
+  "Luka S.",
+  "Dora P.",
+  "Karlo T.",
+  "Elena Z.",
+  "Nikola J."
+];
+
+const DEMO_TITLE_A = [
+  "Javni termin",
+  "Rekreativni meč",
+  "Vikend okupljanje",
+  "Brzi turnir",
+  "Lagana igra",
+  "Otvoreni trening"
+];
+
+const DEMO_TITLE_B = [
+  "donesi loptu",
+  "svi dobrodošli",
+  "fair play",
+  "nakon posla",
+  "jutarnji slot",
+  "večernji termin"
+];
+
 /**
- * Jednokratno dodaje po dva demo-termina po lokaciji (s predpopunjenim prijavama).
+ * Jednokratno (po verziji zastavice) dodaje po dva demo-termina po lokaciji
+ * s nasumičnim vremenom, trajanjem, kapacitetom i brojem prijava.
  */
 export function ensureDemoAppointments(locations, getSuggestedSportsForCourtType) {
-  if (localStorage.getItem(DEMO_SEED_FLAG)) {
+  if (localStorage.getItem(DEMO_SEED_FLAG) === "1") {
     return;
   }
 
-  const list = loadAll();
-  const existingIds = new Set(list.map((a) => a.id));
-  const now = Date.now();
+  let list = loadAll().filter((a) => !String(a?.id ?? "").startsWith("demo-"));
+  localStorage.removeItem("sport-court-demo-seed-v2");
+
+  const nowMs = Date.now();
 
   for (const loc of locations) {
     for (let i = 0; i < 2; i++) {
-      const id = `demo-${loc.objectId}-${i}`;
-      if (existingIds.has(id)) {
-        continue;
-      }
+      const id = `demo-v3-${loc.objectId}-${i}`;
+      const seed = mix32(loc.objectId * 1_031 + i * 5_027);
 
       const sports = getSuggestedSportsForCourtType(loc.objectType);
-      const sport = sports[i % sports.length] || sports[0] || "Nogomet";
-      const daysAhead = 1 + (loc.objectId % 6) + i * 2;
-      const start = new Date(now);
-      start.setHours(18, 30 * i, 0, 0);
-      start.setDate(start.getDate() + daysAhead);
+      const sport =
+        sports[Math.floor(unit(seed, 1) * sports.length)] || sports[0] || "Nogomet";
 
-      const shortAddr = String(loc.address ?? "igralište").slice(0, 32);
-      const titles = ["Javni termin", "Vikend okupljanje"];
+      const minPlayers = 2 + Math.floor(unit(seed, 2) * 6);
+      let maxPlayers = minPlayers + 2 + Math.floor(unit(seed, 3) * 10);
+      maxPlayers = Math.min(24, Math.max(minPlayers + 1, maxPlayers));
+
+      const durations = [45, 60, 75, 90, 105, 120];
+      const durationMinutes =
+        durations[Math.floor(unit(seed, 4) * durations.length)] ?? 60;
+
+      const hoursAhead = Math.pow(unit(seed, 5), 0.65) * 72;
+      const start = new Date(nowMs + hoursAhead * 3600000);
+      start.setSeconds(0, 0);
+      const roundedMin = Math.floor(start.getMinutes() / 15) * 15;
+      start.setMinutes(roundedMin, 0, 0);
+
+      const nJoined = Math.min(
+        maxPlayers,
+        Math.floor(unit(seed, 7) * (maxPlayers + 1))
+      );
+      const participants = [];
+      for (let p = 0; p < nJoined; p++) {
+        const ni = Math.floor(unit(seed, 20 + p) * DEMO_NAME_POOL.length);
+        participants.push({
+          userId: `demo-npc-${loc.objectId}-${i}-${p}`,
+          displayName: DEMO_NAME_POOL[ni] ?? `Igrač ${p + 1}`,
+          joinedAt: new Date(nowMs - (p + 1) * 3_600_000).toISOString()
+        });
+      }
+
+      const shortAddr = String(loc.address ?? "igralište").slice(0, 28);
+      const ta = DEMO_TITLE_A[Math.floor(unit(seed, 8) * DEMO_TITLE_A.length)];
+      const tb = DEMO_TITLE_B[Math.floor(unit(seed, 9) * DEMO_TITLE_B.length)];
       const descs = [
-        "Rekreativna razina, donesite vlastitu vodu. Mjesto na terminu osigurava prijava.",
-        "Nakon prijave otvaramo chat grupe za dogovor oko opreme i dolaska."
+        "Rekreativna razina; donesi vodu. Chat nakon prijave.",
+        "Dogovor oko opreme u chatu nakon što se pridružiš.",
+        "Fair play, rotacija ako bude gužva.",
+        "Početnici i srednja razina — javi se u chatu.",
+        "Trajanje i broj igrača po dogovoru u grupi."
       ];
+      const desc = descs[Math.floor(unit(seed, 11) * descs.length)];
 
       list.push(
         normalizeAppointment({
           id,
           locationObjectId: loc.objectId,
-          title: `${titles[i]} — ${shortAddr}`.trim(),
+          title: `${ta} — ${shortAddr} (${tb})`.trim(),
           sportType: sport,
-          minPlayers: i === 0 ? 4 : 6,
-          maxPlayers: i === 0 ? 10 : 12,
+          minPlayers,
+          maxPlayers,
           startIso: start.toISOString(),
-          durationMinutes: i === 0 ? 90 : 60,
-          description: descs[i],
-          participants: [
-            {
-              userId: "demo-igrac-1",
-              displayName: "Ivana K.",
-              joinedAt: new Date(now - 86400000).toISOString()
-            },
-            {
-              userId: "demo-igrac-2",
-              displayName: "Marko P.",
-              joinedAt: new Date(now - 7200000).toISOString()
-            }
-          ]
+          durationMinutes,
+          description: desc,
+          participants
         })
       );
     }

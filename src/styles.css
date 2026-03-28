@@ -13,12 +13,39 @@ body {
   color: #1f2937;
 }
 
+html.legacy-map-page,
+html.legacy-map-page body {
+  height: 100%;
+  min-height: 100vh;
+  min-height: 100dvh;
+  margin: 0;
+  overflow: hidden;
+}
+
+html.legacy-map-page body {
+  background: #fff;
+}
+
 .page {
   min-height: 100vh;
   display: flex;
   align-items: center;
   justify-content: center;
   padding: 24px;
+}
+
+.page--map-fullscreen {
+  min-height: 100vh;
+  min-height: 100dvh;
+  height: 100vh;
+  height: 100dvh;
+  max-height: 100vh;
+  max-height: 100dvh;
+  padding: 0;
+  margin: 0;
+  align-items: stretch;
+  justify-content: stretch;
+  box-sizing: border-box;
 }
 
 .map-shell {
@@ -31,12 +58,45 @@ body {
   overflow: hidden;
 }
 
+.page--map-fullscreen .map-shell {
+  width: 100%;
+  height: 100%;
+  max-width: none;
+  max-height: none;
+  border-radius: 0;
+  box-shadow: none;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+
 .map-header {
   padding: 14px 18px;
+  padding-top: max(14px, env(safe-area-inset-top));
   border-bottom: 1px solid #e5e7eb;
   background: rgba(255, 255, 255, 0.95);
   position: relative;
   z-index: 500;
+  flex-shrink: 0;
+}
+
+.map-back-link {
+  display: inline-block;
+  margin-bottom: 8px;
+  padding: 0;
+  border: none;
+  background: none;
+  font: inherit;
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: #047857;
+  text-decoration: none;
+  cursor: pointer;
+  text-align: left;
+}
+
+.map-back-link:hover {
+  text-decoration: underline;
 }
 
 .map-header h1 {
@@ -53,6 +113,25 @@ body {
 .map {
   width: 100%;
   height: calc(100% - 75px);
+}
+
+.page--map-fullscreen .map {
+  flex: 1 1 auto;
+  min-height: 0;
+  height: auto;
+}
+
+.map-stack {
+  flex: 1 1 auto;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  position: relative;
+}
+
+.page--map-fullscreen .map-stack .map {
+  flex: 1 1 auto;
+  min-height: 120px;
 }
 
 .pin-overlay {
@@ -456,6 +535,11 @@ body {
   gap: 10px;
 }
 
+/* Bez ovoga klasa `hidden` na .detail-actions ne skriva ništa (nema globalnog .hidden). */
+.detail-actions.hidden {
+  display: none;
+}
+
 .detail-full-note {
   margin: 10px 0 0;
   font-size: 0.9rem;
@@ -471,6 +555,55 @@ body {
   margin: 0;
   font-size: 0.88rem;
   color: #047857;
+}
+
+.chat-modal-head {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  margin: 0 0 10px;
+  padding-right: 4px;
+}
+
+.chat-back-btn {
+  flex-shrink: 0;
+  margin-top: 2px;
+  border: 0;
+  width: 36px;
+  height: 36px;
+  border-radius: 999px;
+  background: rgba(17, 24, 39, 0.08);
+  color: #1f2937;
+  font-size: 1.15rem;
+  line-height: 1;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.chat-back-btn:hover {
+  background: rgba(17, 24, 39, 0.14);
+}
+
+.chat-modal-head-text {
+  flex: 1;
+  min-width: 0;
+}
+
+.chat-modal-head-text .modal-title {
+  margin: 0 0 4px;
+  padding-right: 0;
+}
+
+.chat-modal-head-text .chat-subtitle {
+  margin: 0;
+}
+
+.chat-modal-head .modal-close {
+  position: static;
+  flex-shrink: 0;
+  margin-top: 2px;
 }
 
 .btn-secondary {

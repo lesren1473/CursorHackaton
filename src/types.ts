@@ -26,6 +26,8 @@ export interface Organizer {
   avatarColor: string;
   textColor: string;
   rating: number;
+  /** ISO — isti prikaz kao „Ime · datum” na karti */
+  joinedAt?: string;
 }
 
 export interface ChatMessage {
@@ -59,4 +61,8 @@ export interface Event {
   isUrgent: boolean;
   description: string;
   messages: ChatMessage[];
+  /** Kao na karti — hrvatski naziv sporta iz termina */
+  sportTypeLabel?: string;
+  durationMinutes?: number;
+  minPlayers?: number;
 }

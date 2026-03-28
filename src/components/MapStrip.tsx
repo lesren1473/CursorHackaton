@@ -3,6 +3,7 @@ import { sportColors } from '../constants/sportConfig';
 
 export interface MapStripProps {
   events: Event[];
+  onOpenMap?: () => void;
 }
 
 /** Abstract pin positions for placeholder map */
@@ -14,11 +15,11 @@ const PIN_LAYOUT = [
   { x: 210, y: 52 },
 ];
 
-export function MapStrip({ events }: MapStripProps) {
+export function MapStrip({ events, onOpenMap }: MapStripProps) {
   const pins = events.slice(0, PIN_LAYOUT.length);
 
   const openMap = () => {
-    console.log('Otvori mapu');
+    onOpenMap?.();
   };
 
   return (

@@ -20,6 +20,7 @@ import {
   getChatMessages,
   getOrCreateUserProfile,
   joinAppointment,
+  leaveAppointment,
   participantCount,
   saveUserDisplayName,
   userHasJoined
@@ -28,13 +29,16 @@ import {
 const app = document.querySelector("#app");
 
 app.innerHTML = `
-  <main class="page">
+  <main class="page page--map-fullscreen">
     <section class="map-shell">
       <header class="map-header">
+        <button type="button" id="map-back-btn" class="map-back-link">← Natrag na Sportaj</button>
         <h1>Javna sportska igralista - Zagreb</h1>
         <p id="status" class="status">Učitavanje lokacija…</p>
       </header>
-      <div id="map" class="map"></div>
+      <div class="map-stack">
+        <div id="map" class="map"></div>
+      </div>
 
       <aside id="pin-overlay" class="pin-overlay hidden" aria-live="polite">
         <div class="pin-overlay-inner">
@@ -166,6 +170,7 @@ app.innerHTML = `
         <div id="detail-joined-actions" class="detail-actions hidden">
           <p class="joined-note">Prijavljen si na ovaj termin.</p>
           <button type="button" id="btn-open-chat" class="btn-secondary">Otvori chat</button>
+          <button type="button" id="btn-leave-appointment" class="btn-secondary">Odjavi se</button>
         </div>
       </div>
     </div>
@@ -173,9 +178,14 @@ app.innerHTML = `
     <div id="chat-modal" class="modal hidden" role="dialog" aria-modal="true" aria-labelledby="chat-modal-title">
       <div class="modal-backdrop" data-close="chat"></div>
       <div class="modal-panel modal-panel--chat">
-        <button type="button" class="modal-close" data-close="chat" aria-label="Zatvori">×</button>
-        <h2 id="chat-modal-title" class="modal-title">Chat termina</h2>
-        <p id="chat-subtitle" class="chat-subtitle"></p>
+        <div class="chat-modal-head">
+          <button type="button" id="chat-back-btn" class="chat-back-btn" aria-label="Natrag na opis termina">←</button>
+          <div class="chat-modal-head-text">
+            <h2 id="chat-modal-title" class="modal-title">Chat termina</h2>
+            <p id="chat-subtitle" class="chat-subtitle"></p>
+          </div>
+          <button type="button" class="modal-close" data-close="chat" aria-label="Zatvori">×</button>
+        </div>
         <div id="chat-messages" class="chat-messages" aria-live="polite"></div>
         <form id="chat-form" class="chat-form">
           <input type="text" id="chat-input" maxlength="2000" placeholder="Poruka…" autocomplete="off" />
@@ -185,6 +195,18 @@ app.innerHTML = `
     </div>
   </main>
 `;
+
+document.documentElement.classList.add("legacy-map-page");
+
+function mapHomeUrl() {
+  const base = import.meta.env.BASE_URL || "/";
+  if (base === "/") return "/";
+  return base.endsWith("/") ? base : `${base}/`;
+}
+
+document.querySelector("#map-back-btn")?.addEventListener("click", () => {
+  window.location.assign(mapHomeUrl());
+});
 
 const statusElement = document.querySelector("#status");
 const overlayElement = document.querySelector("#pin-overlay");
@@ -214,8 +236,10 @@ const detailJoinedActions = document.querySelector("#detail-joined-actions");
 const joinDisplayNameInput = document.querySelector("#join-display-name");
 const btnJoinAppointment = document.querySelector("#btn-join-appointment");
 const btnOpenChat = document.querySelector("#btn-open-chat");
+const btnLeaveAppointment = document.querySelector("#btn-leave-appointment");
 
 const chatModal = document.querySelector("#chat-modal");
+const chatBackBtn = document.querySelector("#chat-back-btn");
 const chatSubtitle = document.querySelector("#chat-subtitle");
 const chatMessages = document.querySelector("#chat-messages");
 const chatForm = document.querySelector("#chat-form");
@@ -224,6 +248,7 @@ const chatInput = document.querySelector("#chat-input");
 let selectedLocationObjectId = null;
 let selectedCourtObjectType = "";
 let selectedAppointmentId = null;
+let cachedLocations = [];
 
 function closeOverlay() {
   overlayElement.classList.add("hidden");
@@ -376,6 +401,9 @@ function closeDetailModal() {
 function closeChatModal() {
   chatModal.classList.add("hidden");
   chatInput.value = "";
+  if (selectedAppointmentId) {
+    openDetailModal(selectedAppointmentId);
+  }
 }
 
 function openDetailModal(appointmentId) {
@@ -426,18 +454,13 @@ function openDetailModal(appointmentId) {
 
   detailFullNote.classList.toggle("hidden", !full || joined);
   detailJoinWrap.classList.toggle("hidden", joined || full);
-  detailJoinedActions.classList.toggle("hidden", !joined);
+  if (joined) {
+    detailJoinedActions.classList.remove("hidden");
+  } else {
+    detailJoinedActions.classList.add("hidden");
+  }
 
   detailModal.classList.remove("hidden");
-}
-
-function refreshAfterJoin() {
-  if (selectedAppointmentId) {
-    openDetailModal(selectedAppointmentId);
-  }
-  if (selectedLocationObjectId != null) {
-    renderAppointmentsForLocation(selectedLocationObjectId);
-  }
 }
 
 function renderChatMessages(appointmentId) {
@@ -470,9 +493,14 @@ function openChatModal(appointmentId) {
   if (!a) {
     return;
   }
+  const profile = getOrCreateUserProfile();
+  if (!userHasJoined(a, profile.userId)) {
+    return;
+  }
   selectedAppointmentId = appointmentId;
   chatSubtitle.textContent = a.title;
   renderChatMessages(appointmentId);
+  detailModal.classList.add("hidden");
   chatModal.classList.remove("hidden");
   chatInput.focus();
 }
@@ -528,7 +556,11 @@ btnJoinAppointment.addEventListener("click", () => {
     return;
   }
   saveUserDisplayName(name);
-  refreshAfterJoin();
+  const apptId = selectedAppointmentId;
+  if (selectedLocationObjectId != null) {
+    renderAppointmentsForLocation(selectedLocationObjectId);
+  }
+  openChatModal(apptId);
 });
 
 btnOpenChat.addEventListener("click", () => {
@@ -538,12 +570,35 @@ btnOpenChat.addEventListener("click", () => {
   openChatModal(selectedAppointmentId);
 });
 
+btnLeaveAppointment.addEventListener("click", () => {
+  if (!selectedAppointmentId) {
+    return;
+  }
+  const profile = getOrCreateUserProfile();
+  const result = leaveAppointment(selectedAppointmentId, profile.userId);
+  if (!result.ok) {
+    return;
+  }
+  if (selectedLocationObjectId != null) {
+    renderAppointmentsForLocation(selectedLocationObjectId);
+  }
+  closeDetailModal();
+});
+
+chatBackBtn.addEventListener("click", () => {
+  closeChatModal();
+});
+
 chatForm.addEventListener("submit", (e) => {
   e.preventDefault();
   if (!selectedAppointmentId) {
     return;
   }
+  const appt = getAppointmentById(selectedAppointmentId);
   const profile = getOrCreateUserProfile();
+  if (!appt || !userHasJoined(appt, profile.userId)) {
+    return;
+  }
   const name =
     profile.displayName.trim() ||
     joinDisplayNameInput.value.trim() ||
@@ -665,8 +720,14 @@ async function bootstrap() {
 
     ensureDemoAppointments(mappedLocations, getSuggestedSportsForCourtType);
 
-    createMap("map", mappedLocations, openOverlay);
+    cachedLocations = mappedLocations;
+
+    const leafletMap = createMap("map", mappedLocations, openOverlay);
     statusElement.textContent = `Učitano lokacija: ${mappedLocations.length}`;
+    requestAnimationFrame(() => {
+      leafletMap.invalidateSize();
+    });
+    setTimeout(() => leafletMap.invalidateSize(), 200);
   } catch (error) {
     statusElement.textContent =
       "Dogodila se greška pri učitavanju podataka. Provjeri format CSV datoteke.";

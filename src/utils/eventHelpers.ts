@@ -2,6 +2,36 @@ import type { CapacityFilter, Event, TimeFilter, WhenFilter } from '../types';
 
 const pad = (n: number) => String(n).padStart(2, '0');
 
+const HR_LOCALE = 'hr-HR';
+
+/** Isti format datuma/vremena kao `formatAppointmentRange` na karti */
+const MAP_DETAIL_DATE_TIME: Intl.DateTimeFormatOptions = {
+  day: '2-digit',
+  month: '2-digit',
+  year: 'numeric',
+  hour: '2-digit',
+  minute: '2-digit',
+  hour12: false,
+};
+
+export function formatEventAppointmentRange(event: Event): string {
+  const durMin = event.durationMinutes ?? 60;
+  const start = parseEventDateTime(event);
+  const end = new Date(start.getTime() + durMin * 60_000);
+  const a = start.toLocaleString(HR_LOCALE, MAP_DETAIL_DATE_TIME);
+  const b = end.toLocaleString(HR_LOCALE, MAP_DETAIL_DATE_TIME);
+  return `${a} – ${b}`;
+}
+
+/** Kao `formatDateTimeHr` u appointments.js (lista prijavljenih) */
+export function formatJoinedAtHr(isoString: string): string {
+  const d = new Date(isoString);
+  if (Number.isNaN(d.getTime())) {
+    return '—';
+  }
+  return d.toLocaleString(HR_LOCALE, MAP_DETAIL_DATE_TIME);
+}
+
 export function formatLocalDate(d: Date): string {
   return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
 }

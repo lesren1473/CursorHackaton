@@ -22,6 +22,8 @@ export interface ChatPanelProps {
   messages: ChatMessage[];
   setMessages: Dispatch<SetStateAction<ChatMessage[]>>;
   title?: string;
+  /** Isti smisao kao `#chat-subtitle` na karti */
+  subtitle?: string;
 }
 
 export function ChatPanel({
@@ -30,6 +32,7 @@ export function ChatPanel({
   messages,
   setMessages,
   title = 'Chat ekipe',
+  subtitle,
 }: ChatPanelProps) {
   const [inputText, setInputText] = useState('');
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -113,7 +116,12 @@ export function ChatPanel({
             <ArrowLeft className="h-5 w-5" />
           </button>
           <MessageCircle className="h-5 w-5 text-stone-500" aria-hidden />
-          <h2 className="min-w-0 flex-1 truncate text-sm font-semibold text-stone-900">{title}</h2>
+          <div className="min-w-0 flex-1">
+            <h2 className="truncate text-sm font-semibold text-stone-900">{title}</h2>
+            {subtitle ? (
+              <p className="mt-0.5 truncate text-xs text-stone-500">{subtitle}</p>
+            ) : null}
+          </div>
           <button
             type="button"
             onClick={onClose}
@@ -179,28 +187,86 @@ export function ChatPanel({
   );
 }
 
+function LockMiniIcon({ className }: { className?: string }) {
+  return (
+    <svg
+      className={className}
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth={2}
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden
+    >
+      <path d="M12 15v2" />
+      <rect x="5" y="11" width="14" height="10" rx="2" />
+      <path d="M8 11V7a4 4 0 0 1 8 0v4" />
+    </svg>
+  );
+}
+
 /** Gumb za otvaranje chata na detail stranici */
 export function ChatOpenButton({
   messageCount,
   onClick,
+  disabled = false,
+  disabledHint = 'Pridruži se terminu da otvoriš chat.',
 }: {
   messageCount: number;
   onClick: () => void;
+  disabled?: boolean;
+  disabledHint?: string;
 }) {
   return (
     <button
       type="button"
-      onClick={onClick}
-      className="flex w-full items-center gap-3 rounded-2xl border border-stone-300 bg-white px-4 py-3.5 text-left shadow-sm ring-1 ring-stone-200/60 transition-colors hover:bg-stone-50"
+      disabled={disabled}
+      onClick={() => {
+        if (!disabled) onClick();
+      }}
+      aria-describedby={disabled ? 'chat-locked-hint' : undefined}
+      className={`flex w-full items-center gap-3 rounded-2xl border px-4 py-3.5 text-left shadow-sm ring-1 transition-colors ${
+        disabled
+          ? 'cursor-not-allowed border-stone-200 bg-stone-100 text-stone-500 ring-stone-200/40'
+          : 'border-stone-300 bg-white ring-stone-200/60 hover:bg-stone-50'
+      }`}
     >
-      <MessageCircle className="h-5 w-5 shrink-0 text-stone-600" />
+      {disabled ? (
+        <span
+          className="relative flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-stone-200/90 ring-1 ring-stone-300/60"
+          title="Chat je zaključan do prijave na termin"
+        >
+          <MessageCircle className="h-5 w-5 text-stone-400" aria-hidden />
+          <span className="absolute -right-1 -top-1 flex h-6 w-6 items-center justify-center rounded-full bg-amber-100 ring-2 ring-stone-100">
+            <LockMiniIcon className="h-3.5 w-3.5 text-amber-900" />
+          </span>
+        </span>
+      ) : (
+        <MessageCircle className="h-5 w-5 shrink-0 text-stone-600" aria-hidden />
+      )}
       <div className="min-w-0 flex-1">
-        <p className="text-sm font-semibold text-stone-900">Chat ekipe</p>
-        <p className="text-xs text-stone-500">
-          {messageCount} {messageCount === 1 ? 'poruka' : 'poruka'}
+        <p className={`flex flex-wrap items-center gap-1.5 text-sm font-semibold ${disabled ? 'text-stone-600' : 'text-stone-900'}`}>
+          Chat ekipe
+          {disabled ? (
+            <span className="inline-flex items-center gap-0.5 rounded-md bg-amber-100/90 px-1.5 py-0.5 text-[10px] font-bold uppercase tracking-wide text-amber-900">
+              <LockMiniIcon className="h-3 w-3" />
+              Zaključano
+            </span>
+          ) : null}
+        </p>
+        <p
+          id={disabled ? 'chat-locked-hint' : undefined}
+          className={`text-xs ${disabled ? 'text-stone-500' : 'text-stone-500'}`}
+        >
+          {disabled ? disabledHint : `${messageCount} ${messageCount === 1 ? 'poruka' : 'poruka'}`}
         </p>
       </div>
-      <ChevronRight className="h-5 w-5 shrink-0 text-stone-400" />
+      {disabled ? (
+        <LockMiniIcon className="h-5 w-5 shrink-0 text-amber-700/80" aria-hidden />
+      ) : (
+        <ChevronRight className="h-5 w-5 shrink-0 text-stone-400" aria-hidden />
+      )}
     </button>
   );
 }

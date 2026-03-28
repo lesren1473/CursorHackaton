@@ -12,12 +12,9 @@ const skillLabels: Record<SkillLevel, string> = {
 
 export interface EventCardProps {
   event: Event;
-  isSaved: boolean;
-  onToggleSave: (eventId: string) => void;
-  onJoin: (eventId: string) => void;
 }
 
-export function EventCard({ event, isSaved, onToggleSave, onJoin }: EventCardProps) {
+export function EventCard({ event }: EventCardProps) {
   const left = event.spotsTotal - event.spotsTaken;
   const spots = getSpotsStatus(left);
   const urgentLabel = getUrgentHoursLabel(event);
@@ -31,8 +28,6 @@ export function EventCard({ event, isSaved, onToggleSave, onJoin }: EventCardPro
       : spots.tone === 'amber'
         ? 'text-amber-700'
         : 'text-rose-700';
-
-  const joinDisabled = left <= 0;
 
   return (
     <Link
@@ -91,40 +86,6 @@ export function EventCard({ event, isSaved, onToggleSave, onJoin }: EventCardPro
         <span className="text-xs text-stone-500">
           Voditelj: <span className="font-medium text-stone-700">{event.organizer.name}</span>
         </span>
-      </div>
-
-      <div className="mt-3 flex gap-2">
-        <button
-          type="button"
-          disabled={joinDisabled}
-          onClick={(e) => {
-            e.preventDefault();
-            e.stopPropagation();
-            onJoin(event.id);
-          }}
-          className={`flex-1 rounded-xl py-2.5 text-sm font-semibold transition-colors ${
-            joinDisabled
-              ? 'cursor-not-allowed bg-stone-200 text-stone-400'
-              : 'bg-stone-900 text-white hover:bg-stone-800'
-          }`}
-        >
-          Prijavi se
-        </button>
-        <button
-          type="button"
-          onClick={(e) => {
-            e.preventDefault();
-            e.stopPropagation();
-            onToggleSave(event.id);
-          }}
-          className={`rounded-xl px-4 py-2.5 text-sm font-semibold ring-1 transition-colors ${
-            isSaved
-              ? 'bg-amber-50 text-amber-900 ring-amber-200'
-              : 'bg-white text-stone-700 ring-stone-200 hover:bg-stone-50'
-          }`}
-        >
-          {isSaved ? 'Spremljeno' : 'Spremi'}
-        </button>
       </div>
     </article>
     </Link>
