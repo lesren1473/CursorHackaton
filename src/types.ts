@@ -28,6 +28,20 @@ export interface Organizer {
   rating: number;
 }
 
+export interface ChatMessage {
+  id: string;
+  authorId: string;
+  authorName: string;
+  authorInitials: string;
+  /** npr. bg-blue-100 */
+  authorAvatarColor: string;
+  /** npr. text-blue-800 */
+  authorTextColor: string;
+  text: string;
+  timestamp: string;
+  isSystem: boolean;
+}
+
 export interface Event {
   id: string;
   title: string;
@@ -43,4 +57,6 @@ export interface Event {
   organizer: Organizer;
   participants: Organizer[];
   isUrgent: boolean;
+  description: string;
+  messages: ChatMessage[];
 }

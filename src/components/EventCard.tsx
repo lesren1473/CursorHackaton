@@ -1,3 +1,4 @@
+import { Link } from 'react-router-dom';
 import type { Event, SkillLevel } from '../types';
 import { sportColors, sportLabels } from '../constants/sportConfig';
 import { getSpotsStatus, getTimeLabel, getUrgentHoursLabel } from '../utils/eventHelpers';
@@ -34,6 +35,10 @@ export function EventCard({ event, isSaved, onToggleSave, onJoin }: EventCardPro
   const joinDisabled = left <= 0;
 
   return (
+    <Link
+      to={`/event/${event.id}`}
+      className="block rounded-2xl no-underline text-inherit outline-none ring-0 focus-visible:ring-2 focus-visible:ring-stone-400 focus-visible:ring-offset-2"
+    >
     <article className="rounded-2xl bg-white p-3.5 shadow-sm ring-1 ring-stone-200/80">
       <div className="flex flex-wrap items-start justify-between gap-2">
         <span
@@ -92,7 +97,11 @@ export function EventCard({ event, isSaved, onToggleSave, onJoin }: EventCardPro
         <button
           type="button"
           disabled={joinDisabled}
-          onClick={() => onJoin(event.id)}
+          onClick={(e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            onJoin(event.id);
+          }}
           className={`flex-1 rounded-xl py-2.5 text-sm font-semibold transition-colors ${
             joinDisabled
               ? 'cursor-not-allowed bg-stone-200 text-stone-400'
@@ -103,7 +112,11 @@ export function EventCard({ event, isSaved, onToggleSave, onJoin }: EventCardPro
         </button>
         <button
           type="button"
-          onClick={() => onToggleSave(event.id)}
+          onClick={(e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            onToggleSave(event.id);
+          }}
           className={`rounded-xl px-4 py-2.5 text-sm font-semibold ring-1 transition-colors ${
             isSaved
               ? 'bg-amber-50 text-amber-900 ring-amber-200'
@@ -114,5 +127,6 @@ export function EventCard({ event, isSaved, onToggleSave, onJoin }: EventCardPro
         </button>
       </div>
     </article>
+    </Link>
   );
 }

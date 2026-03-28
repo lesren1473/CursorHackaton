@@ -98,3 +98,41 @@ export function getUrgentHoursLabel(event: Event, now = new Date()): string | nu
 export function getTimeLabel(event: Event): string {
   return `${event.startTime}`;
 }
+
+/** ISO npr. 2024-01-19T18:00:00 → "Petak, 19. siječnja" */
+export function formatEventDate(isoString: string): string {
+  const d = new Date(isoString);
+  if (Number.isNaN(d.getTime())) return '';
+  const raw = d.toLocaleDateString('hr-HR', {
+    weekday: 'long',
+    day: 'numeric',
+    month: 'long',
+  });
+  return raw.charAt(0).toUpperCase() + raw.slice(1);
+}
+
+/** ISO string → "14:05" (lokalno) */
+export function formatChatTime(isoString: string): string {
+  const d = new Date(isoString);
+  if (Number.isNaN(d.getTime())) return '';
+  const h = String(d.getHours()).padStart(2, '0');
+  const m = String(d.getMinutes()).padStart(2, '0');
+  return `${h}:${m}`;
+}
+
+export function getGoogleMapsUrl(location: string, city = 'Zagreb'): string {
+  return `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(`${location}, ${city}`)}`;
+}
+
+export function getOccupancyPercent(event: Event): number {
+  if (event.spotsTotal <= 0) return 0;
+  return Math.round((event.spotsTaken / event.spotsTotal) * 100);
+}
+
+/** Za formatEventDate iz event.date + event.startTime */
+export function eventDateTimeIso(event: Event): string {
+  const [hh, mm] = event.startTime.split(':');
+  const h = (hh ?? '0').padStart(2, '0');
+  const m = (mm ?? '0').padStart(2, '0');
+  return `${event.date}T${h}:${m}:00`;
+}

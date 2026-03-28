@@ -12,6 +12,16 @@ export const sportColors: Record<
   badminton: { badge: 'bg-teal-50 text-teal-800', pin: '#0f766e' },
 };
 
+/** Light hero background za stranicu detalja */
+export const sportHeroBg: Record<Sport, string> = {
+  futsal: 'bg-gradient-to-b from-blue-100 via-blue-50 to-white',
+  košarka: 'bg-gradient-to-b from-amber-100 via-amber-50 to-white',
+  tenis: 'bg-gradient-to-b from-green-100 via-green-50 to-white',
+  trčanje: 'bg-gradient-to-b from-purple-100 via-violet-50 to-white',
+  odbojka: 'bg-gradient-to-b from-rose-100 via-rose-50 to-white',
+  badminton: 'bg-gradient-to-b from-teal-100 via-teal-50 to-white',
+};
+
 export const sportLabels: Record<Sport, string> = {
   futsal: 'Futsal',
   košarka: 'Košarka',

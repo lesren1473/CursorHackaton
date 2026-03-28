@@ -17,3 +17,34 @@ body {
   -ms-overflow-style: none;
   scrollbar-width: none;
 }
+
+.chat-overlay-sportaj {
+  opacity: 0;
+  transition: opacity 0.3s ease;
+  pointer-events: none;
+}
+.chat-overlay-sportaj.is-open {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.chat-panel-sportaj {
+  transform: translateX(100%);
+  transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+.chat-panel-sportaj.is-open {
+  transform: translateX(0);
+}
+
+@keyframes pulse-urgent {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.65;
+  }
+}
+.urgent-pill-sportaj {
+  animation: pulse-urgent 1.5s ease-in-out infinite;
+}
