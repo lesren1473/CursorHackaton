@@ -16,9 +16,13 @@ const IMG = {
   smallSoccer: `https://images.unsplash.com/photo-1574629810360-7efbbe195018${W640}`,
   basketball: `https://images.unsplash.com/photo-1546519638-68e109498ffc${W640}`,
   soccer: `https://images.unsplash.com/photo-1431324155629-1a6deb1dec8d${W640}`,
-  /** Petanke / boće na slobodnom terenu */
-  bocce: `https://images.unsplash.com/photo-1521412644187-c49fa049e84d${W640}`,
-  playground: `https://images.unsplash.com/photo-1503454537195-1dcabb73ffb9${W640}`,
+  bocce:
+    "https://i.pinimg.com/736x/14/4d/3f/144d3f086cae1134cf2c5f20fa2446f0.jpg",
+  playground:
+    "https://i.pinimg.com/1200x/f6/97/56/f697565302021c778a95802271cc68a6.jpg",
+  /** Vježbalište za odrasle (ostala vježbališta ostaju exerciseBars). */
+  adultFitness:
+    "https://i.pinimg.com/1200x/d6/13/91/d61391a62403b138d72833fbb32cb2d9.jpg",
   exerciseBars: `https://images.unsplash.com/photo-1517836357463-d25dfeac3438${W640}`,
   multiPurpose: `https://images.unsplash.com/photo-1579952363873-27f3bade9f55${W640}`,
   grassField: `https://images.unsplash.com/photo-1574629810360-7efbbe195018${W640}`,
@@ -66,9 +70,10 @@ export function imageUrlForObjectType(objectType) {
     ["kosarka", IMG.basketball],
     ["nogomet", IMG.soccer],
     ["bocaliste", IMG.bocce],
+    ["djecje", IMG.playground],
+    ["vjezbaliste za odrasle", IMG.adultFitness],
     ["vjezbaliste", IMG.exerciseBars],
     ["sprave", IMG.exerciseBars],
-    ["djecje", IMG.playground],
     ["polivalentno asfaltirano", IMG.asphaltCourt],
     ["polivalentno", IMG.multiPurpose],
     ["travnato", IMG.grassField],
